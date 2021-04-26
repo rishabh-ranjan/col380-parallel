@@ -14,4 +14,4 @@ gen: gen.c
 	gcc -Wall -o $@ $^
 
 clean:
-	rm main_omp main_mpi gen *.A *.L *.U
+	rm main_omp main_mpi gen *.A *.L *.U output_*
