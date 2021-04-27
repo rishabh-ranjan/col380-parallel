@@ -5,8 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-float A[N*N], L[N*N], UT[N*N];
-double Ld[N*N], Ud[N*N];
+double A[N*N], L[N*N], UT[N*N], U[N*N];
 
 int main(int argc, char **argv)
 {
@@ -47,23 +46,23 @@ int main(int argc, char **argv)
 	for (int j = 0; j < n; ++j) {
 		const int root = j%p;
 		MPI_Request reqs[3];
-		MPI_Ibcast(&L[n*j], j, MPI_FLOAT, root, MPI_COMM_WORLD, &reqs[0]);
-		MPI_Ibcast(&UT[n*j], j, MPI_FLOAT, root, MPI_COMM_WORLD, &reqs[1]);
+		MPI_Ibcast(&L[n*j], j, MPI_DOUBLE, root, MPI_COMM_WORLD, &reqs[0]);
+		MPI_Ibcast(&UT[n*j], j, MPI_DOUBLE, root, MPI_COMM_WORLD, &reqs[1]);
 		if (r == root) {
-			float ls = 0;
+			double ls = 0;
 			for (int k = 0; k < j; ++k) {
 				ls += L[n*j+k] * UT[n*j+k];
 			}
 			L[n*j+j] = A[n*j+j] - ls;
 		}
-		MPI_Ibcast(&L[n*j+j], 1, MPI_FLOAT, root, MPI_COMM_WORLD, &reqs[2]);
+		MPI_Ibcast(&L[n*j+j], 1, MPI_DOUBLE, root, MPI_COMM_WORLD, &reqs[2]);
 		MPI_Waitall(3, reqs, MPI_STATUSES_IGNORE);
-		const float d = L[n*j+j];
+		const double d = L[n*j+j];
 		if (d == 0) {
 			MPI_Abort(MPI_COMM_WORLD, 0);
 		}
 		for (int i = j+(r-root?r-root:p); i < n; i += p) {
-			float ls = 0, us = 0;
+			double ls = 0, us = 0;
 			for (int k = 0; k < j; ++k) {
 				ls += L[n*i+k] * UT[n*j+k];
 				us += L[n*j+k] * UT[n*i+k];
@@ -79,13 +78,9 @@ int main(int argc, char **argv)
 
 	if (r == 0) {
 		for (int i = 0; i < n; ++i) {
-			Ud[n*i+i] = 1;
-			for (int j = 0; j < n; ++j) {
-				if (j <= i) {
-					Ld[n*i+j] = L[n*i+j];
-				} else {
-					Ud[n*i+j] = UT[n*j+i];
-				}
+			U[n*i+i] = 1;
+			for (int j = i+1; j < n; ++j) {
+				U[n*i+j] = UT[n*j+i];
 			}
 		}
 
@@ -95,8 +90,8 @@ int main(int argc, char **argv)
 		tic = MPI_Wtime();
 #endif
 
-		aux_write_output(L_fname, Ld, n);
-		aux_write_output(U_fname, Ud, n);
+		aux_write_output(L_fname, L, n);
+		aux_write_output(U_fname, U, n);
 
 #ifndef NDEBUG
 		toc = MPI_Wtime();
