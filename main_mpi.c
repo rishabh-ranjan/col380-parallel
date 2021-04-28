@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 	fp = fopen(A_fname, "r");
 	for (int i = 0; i < n; ++i) {
 		for (int j = 0; j < n; ++j) {
-			A[n*i+j] = fscanfl(fp);
+			A[n*i+j] = fscand(fp);
 		}
 	}
 	fclose(fp);
